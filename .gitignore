@@ -2,4 +2,6 @@
 node_modules/*
 package-lock.json
 debug*.json
-output.json
+output*.json
+output*.csv
+dedupe.csv

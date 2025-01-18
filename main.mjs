@@ -26,9 +26,10 @@ Encounter IDs:
 
 /* ! EDIT ME BEFORE YOU RUN THE SCRIPT ! */
 const WCL_RAID_ZONE_ID = 42; // Liberation of Undermine
-const ENCOUNTER_ID = 3012;
+const ENCOUNTER_ID = 3015;
+const DIFFICULTY_ID = 4; // Heroic -> 4, Mythic -> 5
 const REQUIRED_RAID_ILVL = 631; // In the case of scaling aura missing ingame causing skewed data
-const BASELINE_MIN_FIGHT_DURATION = 120; // Minimum fight duration in seconds to reduce data load
+const BASELINE_MIN_FIGHT_DURATION = 45; // Minimum fight duration in seconds to reduce data load
 /* ! EDIT ME BEFORE YOU RUN THE SCRIPT ! */
 
 const outputGQLErrors = (out) => {
@@ -127,7 +128,13 @@ const codeIdParser = async (access_token, fightFinderOutput) => {
 
   console.log('Finalizing output...');
   const csvData = data.map(row => row.join(',')).join('\n');
-  writeToFile(csvData, { filePath: './output.json', alreadyString: true });
+  writeToFile(
+    csvData,
+    {
+      filePath: `./output/output_${ENCOUNTER_ID}_${DIFFICULTY_ID}.json`,
+      alreadyString: true
+    }
+);
 }
 
 const handleFightFinder = async (access_token) => {
@@ -144,6 +151,7 @@ const handleFightFinder = async (access_token) => {
             code
             fights(
               encounterID: ${ENCOUNTER_ID}
+              difficulty: ${DIFFICULTY_ID}
               translate: true
             ) {
               averageItemLevel
