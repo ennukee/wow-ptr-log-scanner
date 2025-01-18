@@ -25,6 +25,8 @@ Encounter IDs:
 */
 
 /* ! EDIT ME BEFORE YOU RUN THE SCRIPT ! */
+// NOTABLE RESTRICTION: Haven't yet coded the ability to handle if the same encounter is tested
+// several times. Will handle that once it happens (needs some timestamp logic). 
 const WCL_RAID_ZONE_ID = 42; // Liberation of Undermine
 const ENCOUNTER_ID = 3015;
 const DIFFICULTY_ID = 4; // Heroic -> 4, Mythic -> 5
