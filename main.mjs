@@ -14,25 +14,40 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 /*
 Encounter IDs:
-  Vexie and the Geargrinders	3009
-  Cauldron of Carnage	3010
-  Rik Reverb	3011
-  Stix Bunkjunker	3012
-  Sprocketmonger Lockenstock	3013
-  One-Armed Bandit	3014
-  Mug'Zee, Heads of Security	3015
-  Chrome King Gallywix 3016
+  Plexus Sentinel 3129
+  Loom'ithar 3131
+  Soulbinder Naazindhri 3130
+  Forgeweaver Araz 3132
+  Soul Hunters 3122
+  Fractillus 3133
+  Nexus-King Saldahaar 3134
+  Dimensius 3135
 */
 
+/* ------------------------------------- */
 /* ! EDIT ME BEFORE YOU RUN THE SCRIPT ! */
-// NOTABLE RESTRICTION: Haven't yet coded the ability to handle if the same encounter is tested
-// several times. Will handle that once it happens (needs some timestamp logic). 
-const WCL_RAID_ZONE_ID = 42; // Liberation of Undermine
-const ENCOUNTER_ID = 3015;
-const DIFFICULTY_ID = 4; // Heroic -> 4, Mythic -> 5
-const REQUIRED_RAID_ILVL = 631; // In the case of scaling aura missing ingame causing skewed data
-const BASELINE_MIN_FIGHT_DURATION = 45; // Minimum fight duration in seconds to reduce data load
+/* ------------------------------------- */
+/*
+  NOTABLE RESTRICTION: Haven't yet coded the ability to handle if the same encounter is tested
+  several times. Will handle that once it happens (needs some timestamp logic).
+  */
+// 42 = Liberation of Undermine, 44 = Manaforge Omega
+const WCL_RAID_ZONE_ID = 44;
+// See comment above for encounter IDs
+const ENCOUNTER_ID = 3134;
+// Heroic = 4, Mythic = 5
+const DIFFICULTY_ID = 4;
+// In the case of scaling aura missing ingame causing skewed data.
+// Set this to a value slightly above raid ilvl scaling
+const REQUIRED_RAID_ILVL = 680; 
+// Minimum fight duration in seconds to reduce data load
+const BASELINE_MIN_FIGHT_DURATION = 60;
+const BLACKLISTED_SPELL_IDS = [
+  // 467230, // (Vexie) Blaze of Glory: Damage from hitting boss with bikes
+]
+/* ------------------------------------- */
 /* ! EDIT ME BEFORE YOU RUN THE SCRIPT ! */
+/* ------------------------------------- */
 
 const outputGQLErrors = (out) => {
   if (out && out.errors) {
@@ -69,6 +84,9 @@ const individualFightParser = async (access_token, code, fightId) => {
           fightIDs: [${fightId}]
           encounterID: ${ENCOUNTER_ID}
           dataType: DamageDone
+          ${BLACKLISTED_SPELL_IDS.length > 0 ? `filterExpression: "${
+            BLACKLISTED_SPELL_IDS.map(id => `ability.id != ${id}`).join(' and ')
+          }"` : ''} 
         )
         fights(fightIDs: [${fightId}]) {
           startTime
@@ -86,7 +104,7 @@ const individualFightParser = async (access_token, code, fightId) => {
   }, HEADERS(access_token)).then(
     (resp) => {
       const { startTime, endTime, kill } = resp.data.data.reportData.report.fights[0];
-      const output = resp.data.data.reportData.report.table.data.entries
+      const output = (resp?.data?.data?.reportData?.report?.table?.data?.entries || [])
         .map(entry => {
           if ((endTime - startTime) / 1000 < BASELINE_MIN_FIGHT_DURATION) return;
           return parseIndividualDamage(entry, startTime, endTime, kill, code, fightId)
@@ -100,7 +118,7 @@ const individualFightParser = async (access_token, code, fightId) => {
 
 const codeIdParser = async (access_token, fightFinderOutput) => {
   /*
-    fightFinderOutput structure if of form
+    fightFinderOutput structure is of form
     {
       code: string,
       fights: {
@@ -115,7 +133,10 @@ const codeIdParser = async (access_token, fightFinderOutput) => {
   for (let report of fightFinderOutput) {
     console.debug(' > Parsing report', report.code);
     const { code, fights } = report;
-    if (!fights) continue;
+    if (!fights) { 
+      console.debug(' > > No fights found for report', code);
+      continue;
+    }
 
     for (let fight of fights) {
       if (fight.averageItemLevel > REQUIRED_RAID_ILVL) continue;

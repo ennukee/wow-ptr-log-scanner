@@ -6,7 +6,8 @@ import { stringify } from 'csv-stringify';
 // in the case of several people logging the same fight.
 
 const results = [];
-fs.createReadStream('output.json')
+const FILEPATH = './output/output_3134_4.json'
+fs.createReadStream(FILEPATH)
   .pipe(csv({ headers: false }))
   .on('data', (data) => results.push(Object.values(data)))
   .on('end', () => {
@@ -18,7 +19,8 @@ fs.createReadStream('output.json')
   );
   console.log(dedupedResults.length)
 
-  const output = fs.createWriteStream('outputDeduped.csv');
+  const outputFilePath = FILEPATH.replace('.json', '_deduped.json');
+  const output = fs.createWriteStream(outputFilePath);
   const stringifier = stringify({ header: false });
 
   dedupedResults.forEach(row => {
